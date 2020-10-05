@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Vizex.CustomInput;
 
 namespace Vizex.Connecting
 {
-    public class ConnectionCreator : MonoBehaviour, IPointerClickHandler, IPointerDownHandler
+    public class ConnectionCreator : MonoBehaviour, ICustomClick, ICustomDragBegin, ICustomDrag, ICustomDragEnd
     {
         protected abstract class ConnectorCreatorState
         {
@@ -17,8 +18,9 @@ namespace Vizex.Connecting
             }
 
             abstract public void OnClickAnchor(ConnectionAnchor connectionAnchor);
-            abstract public void OnStartDragAnchor(ConnectionAnchor connectionAnchor);
-            abstract public void OnUpdate();
+            abstract public void OnBeginDragAnchor(ConnectionAnchor connectionAnchor);
+            abstract public void OnDragAnchor();
+            abstract public void OnEndDragAnchor();
             abstract public void OnEmptyClick();
         }
 
@@ -33,7 +35,7 @@ namespace Vizex.Connecting
 
                 _connectionCreator._state = new AnchorClickedState(_connectionCreator);
             }
-            public override void OnStartDragAnchor(ConnectionAnchor connectionAnchor)
+            public override void OnBeginDragAnchor(ConnectionAnchor connectionAnchor)
             {
                 _connectionCreator.ActivateAnchor(connectionAnchor);
 
@@ -43,7 +45,10 @@ namespace Vizex.Connecting
                 _connectionCreator._state = new AnchorDragedState(_connectionCreator);
             }
 
-            public override void OnUpdate()
+            public override void OnDragAnchor()
+            { }
+
+            public override void OnEndDragAnchor()
             { }
 
             public override void OnEmptyClick()
@@ -67,10 +72,13 @@ namespace Vizex.Connecting
 
             }
 
-            public override void OnStartDragAnchor(ConnectionAnchor connectionAnchor)
+            public override void OnBeginDragAnchor(ConnectionAnchor connectionAnchor)
             { }
 
-            public override void OnUpdate()
+            public override void OnDragAnchor()
+            { }
+
+            public override void OnEndDragAnchor()
             { }
 
             public override void OnEmptyClick()
@@ -88,16 +96,16 @@ namespace Vizex.Connecting
 
             public override void OnClickAnchor(ConnectionAnchor connectionAnchor)
             {
-                _connectionCreator.ActivateAnchor(connectionAnchor);
+                /*_connectionCreator.ActivateAnchor(connectionAnchor);
 
                 Destroy(_connectionCreator._tempConnection.gameObject);
 
-                _connectionCreator._state = new AnchorClickedState(_connectionCreator);
+                _connectionCreator._state = new AnchorClickedState(_connectionCreator);*/
             }
-            public override void OnStartDragAnchor(ConnectionAnchor connectionAnchor)
+            public override void OnBeginDragAnchor(ConnectionAnchor connectionAnchor)
             { }
 
-            public override void OnUpdate()
+            public override void OnDragAnchor()
             {
                 Ray ray = _connectionCreator._camera.ScreenPointToRay(Input.mousePosition);
 
@@ -124,23 +132,22 @@ namespace Vizex.Connecting
                     Vector3 hitPoint = ray.GetPoint(enter);
                     _connectionCreator._mouseTransform.position = hitPoint;
                 }
+            }
 
-                 //Извиняюсь за грязь, Юнити подкинул неожиданностей в своих встроенных событиях обработки нажатий
-                if (Input.GetMouseButtonUp(0))
+            public override void OnEndDragAnchor()
+            {
+                if (_connectionCreator._overedAnchor != null)
                 {
-                    if (_connectionCreator._overedAnchor != null)
-                    {
-                        _connectionCreator._tempConnection.First = _connectionCreator._overedAnchor.transform;
-                    }
-                    else
-                    {
-                        Destroy(_connectionCreator._tempConnection.gameObject);
-                    }
-
-                    _connectionCreator.DisactivateAnchors();
-
-                    _connectionCreator._state = new DisactiveState(_connectionCreator);
+                    _connectionCreator._tempConnection.First = _connectionCreator._overedAnchor.transform;
                 }
+                else
+                {
+                    Destroy(_connectionCreator._tempConnection.gameObject);
+                }
+
+                _connectionCreator.DisactivateAnchors();
+
+                _connectionCreator._state = new DisactiveState(_connectionCreator);
             }
 
             public override void OnEmptyClick()
@@ -174,11 +181,6 @@ namespace Vizex.Connecting
             }
         }
 
-        private void Update()
-        {
-            _state.OnUpdate();
-        }
-
         protected void ActivateAnchor(ConnectionAnchor connectionAnchor)
         {
             foreach (ConnectionAnchor anchor in _connectionAnchors)
@@ -205,9 +207,9 @@ namespace Vizex.Connecting
             return connection;
         }
 
-        public void OnPointerClick(PointerEventData eventData)
+        public void OnClick(CustomInputInfo info)
         {
-            ConnectionAnchor connectionAnchor = eventData.pointerCurrentRaycast.gameObject.GetComponent<ConnectionAnchor>();
+            ConnectionAnchor connectionAnchor = info.CollidedGameObject.GetComponent<ConnectionAnchor>();
             if (connectionAnchor != null)
             {
                 _state.OnClickAnchor(connectionAnchor);
@@ -218,17 +220,27 @@ namespace Vizex.Connecting
             }
         }
 
-        public void OnPointerDown(PointerEventData eventData)
+        public void OnBeginDrag(CustomInputInfo info)
         {
-            ConnectionAnchor connectionAnchor = eventData.pointerCurrentRaycast.gameObject.GetComponent<ConnectionAnchor>();
+            ConnectionAnchor connectionAnchor = info.CollidedGameObject.GetComponent<ConnectionAnchor>();
             if (connectionAnchor != null)
             {
-                _state.OnStartDragAnchor(connectionAnchor);
+                _state.OnBeginDragAnchor(connectionAnchor);
             }
             else
             {
                 _state.OnEmptyClick();
             }
+        }
+
+        public void OnDrag(CustomInputInfo info)
+        {
+            _state.OnDragAnchor();
+        }
+
+        public void OnEndDrag(CustomInputInfo info)
+        {
+            _state.OnEndDragAnchor();
         }
     }
 }

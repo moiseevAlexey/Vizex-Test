@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Vizex.CustomInput;
 
 namespace Vizex.PlatformMoving
 {
-    public class PlatformMover : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class PlatformMover : MonoBehaviour, ICustomDragBegin, ICustomDrag, ICustomDragEnd
     {
         [SerializeField] protected GameObject _platform;
 
@@ -26,9 +27,9 @@ namespace Vizex.PlatformMoving
             _plane = plane;
         }
 
-        public void OnBeginDrag(PointerEventData eventData)
+        public void OnBeginDrag(CustomInputInfo info)
         {
-            if (eventData.pointerCurrentRaycast.gameObject == _platform)
+            if (info.CollidedGameObject == _platform)
             {
                 _isCanMove = true;
 
@@ -45,7 +46,7 @@ namespace Vizex.PlatformMoving
             }
         }
 
-        public void OnDrag(PointerEventData eventData)
+        public void OnDrag(CustomInputInfo info)
         {
             if (_isCanMove)
             {
@@ -61,9 +62,9 @@ namespace Vizex.PlatformMoving
             }
         }
 
-        public void OnEndDrag(PointerEventData eventData)
+        public void OnEndDrag(CustomInputInfo info)
         {
-            if (eventData.pointerCurrentRaycast.gameObject == _platform)
+            if (info.CollidedGameObject == _platform)
             {
                 _isCanMove = false;
             }
